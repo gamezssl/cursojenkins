@@ -1,13 +1,13 @@
 node {
-    def server = Artifactory.server('cursojenkinsmac.jfrog.io')
+    def server = Artifactory.server('gamezssl.jfrog.io')
     def rtGradle = Artifactory.newGradleBuild()
     def buildInfo = Artifactory.newBuildInfo()
     
     stage 'Complicacion/Build'
-        git branch: 'main', url: 'https://github.com/macloujulian/gs-gradle.git'
+        git branch: 'main', url: 'https://github.com/gamezssl/gs-gradle.git'
 
     stage 'Configuracion Artifactory'
-        rtGradle.tool = 'gradle' // Como le asignamos al nombre de la herramienta en Jenkins en configuración
+        rtGradle.tool = 'gradle-jenkins' // Como le asignamos al nombre de la herramienta en Jenkins en configuración
         rtGradle.deployer repo:'default-gradle-dev-local',  server: server
         rtGradle.resolver repo:'default-gradle-dev', server: server
 
