@@ -1,12 +1,19 @@
 pipeline {
-    agent { label 'dind-3' }
+    agent { label 'dind-3' } // Especifica el agente donde deseas ejecutar el pipeline
     environment {
-        SERVER_URL = 'gamezssl.jfrog.io'
+        SERVER_URL = 'gamezssl.jfrog.io' // URL de tu servidor Artifactory
     }
     tools {
-        gradle 'gradle-jenkins'
+        gradle 'gradle-jenkins' // Nombre de la herramienta Gradle configurada en Jenkins
     }
     stages {
+        stage('Verificación de Gradle') {
+            steps {
+                // Verifica que Gradle está correctamente instalado y accesible en el agente
+                sh 'gradle --version'
+            }
+        }
+        
         stage('Clonación del Repositorio') {
             steps {
                 git branch: 'main', url: 'https://github.com/gamezssl/gs-gradle.git'
@@ -18,7 +25,7 @@ pipeline {
                 script {
                     def server = Artifactory.server(SERVER_URL)
                     def rtGradle = Artifactory.newGradleBuild()
-                    rtGradle.tool = 'gradle-jenkins'
+                    rtGradle.tool = 'gradle-jenkins' // El nombre de la herramienta debe coincidir con el configurado en Jenkins
                     rtGradle.deployer repo: 'default-gradle-dev-local', server: server
                     rtGradle.resolver repo: 'default-gradle-dev', server: server
                 }
@@ -30,7 +37,7 @@ pipeline {
                 script {
                     def buildInfo = Artifactory.newBuildInfo()
                     buildInfo.env.capture = true
-                    buildInfo.env.filter.addInclude("*")
+                    buildInfo.env.filter.addInclude("*") // Captura todas las variables de entorno
                 }
             }
         }
@@ -39,7 +46,7 @@ pipeline {
             steps {
                 script {
                     def rtGradle = Artifactory.newGradleBuild()
-                    rtGradle.usesPlugin = true
+                    rtGradle.usesPlugin = true // El plugin ya está definido en el script de Gradle
                 }
             }
         }
