@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'dind-3' } // Especifica el agente donde deseas ejecutar el pipeline
+    agent { label 'mi-agente-especifico' } // Especifica el agente donde deseas ejecutar el pipeline
     environment {
         SERVER_URL = 'gamezssl.jfrog.io' // URL de tu servidor Artifactory
     }
