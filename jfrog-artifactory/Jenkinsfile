@@ -1,15 +1,15 @@
 pipeline {
-    agent { label 'dind-3' } // Especifica el agente donde deseas ejecutar el pipeline
+    agent { label 'dind-3' }
     environment {
-        SERVER_URL = 'gamezssl.jfrog.io' // URL de tu servidor Artifactory
+        SERVER_URL = 'cursojenkinsmac.jfrog.io'
     }
     tools {
-        gradle 'gradle-jenkins' // Nombre de la herramienta Gradle configurada en Jenkins
+        gradle 'gradle-jenkins'
     }
     stages {
         stage('Clonación del Repositorio') {
             steps {
-                git branch: 'main', url: 'https://github.com/gamezssl/gs-gradle.git'
+                git branch: 'main', url: 'https://github.com/macloujulian/gs-gradle.git'
             }
         }
 
@@ -18,7 +18,7 @@ pipeline {
                 script {
                     def server = Artifactory.server(SERVER_URL)
                     def rtGradle = Artifactory.newGradleBuild()
-                    rtGradle.tool = 'gradle-jenkins' // El nombre de la herramienta debe coincidir con el configurado en Jenkins
+                    rtGradle.tool = 'gradle-jenkins'
                     rtGradle.deployer repo: 'default-gradle-dev-local', server: server
                     rtGradle.resolver repo: 'default-gradle-dev', server: server
                 }
@@ -30,7 +30,7 @@ pipeline {
                 script {
                     def buildInfo = Artifactory.newBuildInfo()
                     buildInfo.env.capture = true
-                    buildInfo.env.filter.addInclude("*") // Captura todas las variables de entorno
+                    buildInfo.env.filter.addInclude("*")
                 }
             }
         }
@@ -39,7 +39,7 @@ pipeline {
             steps {
                 script {
                     def rtGradle = Artifactory.newGradleBuild()
-                    rtGradle.usesPlugin = true // El plugin ya está definido en el script de Gradle
+                    rtGradle.usesPlugin = true
                 }
             }
         }
