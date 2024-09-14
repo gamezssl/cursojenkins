@@ -1,28 +1,32 @@
-node {
-    def server = Artifactory.server('gamezssl.jfrog.io')
-    def rtGradle = Artifactory.newGradleBuild()
-    def buildInfo = Artifactory.newBuildInfo()
-    
-    stage 'Complicacion/Build'
-        git branch: 'main', url: 'https://github.com/gamezssl/gs-gradle.git'
+pipeline {
+    agent { label 'dind-3' } // Especifica el agente en el que deseas ejecutar el pipeline
+    environment {
+        SERVER_URL = 'gamezssl.jfrog.io'
+    }
+    stages {
+        stage('Complicacion/Build') {
+            steps {
+                script {
+                    def server = Artifactory.server(SERVER_URL)
+                    def rtGradle = Artifactory.newGradleBuild()
+                    def buildInfo = Artifactory.newBuildInfo()
+                    
+                    git branch: 'main', url: 'https://github.com/gamezssl/gs-gradle.git'
 
-    stage 'Configuracion Artifactory'
-        rtGradle.tool = 'gradle-jenkins' // Como le asignamos al nombre de la herramienta en Jenkins en configuración
-        rtGradle.deployer repo:'default-gradle-dev-local',  server: server
-        rtGradle.resolver repo:'default-gradle-dev', server: server
+                    rtGradle.tool = 'gradle-jenkins' // Nombre de la herramienta Gradle en Jenkins
+                    rtGradle.deployer repo: 'default-gradle-dev-local', server: server
+                    rtGradle.resolver repo: 'default-gradle-dev', server: server
 
-        stage('Configuracion buildInfo') {
-            buildInfo.env.capture = true
-            buildInfo.env.filter.addInclude("*")
-        }
+                    buildInfo.env.capture = true
+                    buildInfo.env.filter.addInclude("*")
+                    
+                    rtGradle.usesPlugin = true
 
-        stage('Configuraciones extra de gradle') {
-            rtGradle.usesPlugin = true // El plugin ya está definifo en el build script
+                    rtGradle.run rootDir: "artifactory/", tasks: 'clean artifactoryPublish', buildInfo: buildInfo
+
+                    server.publishBuildInfo buildInfo
+                }
+            }
         }
-        stage('Ejecutar Gradle') {
-            rtGradle.run rootDir: "artifactory/", tasks: 'clean artifactoryPublish', buildInfo: buildInfo
-        }
-        stage('Publicar buildInfo') {
-            server.publishBuildInfo buildInfo
-        }
+    }
 }
