@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'dind' || 'dind-3' } // Reemplaza con el label del agente que deseas usar
+        agent { label 'dind || dind-3' }
 
     stages {
         stage('Preparación') {
