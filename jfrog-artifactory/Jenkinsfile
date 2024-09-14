@@ -1,7 +1,7 @@
 pipeline {
     agent { label 'dind-3' }
     environment {
-        SERVER_URL = 'cursojenkinsmac.jfrog.io'
+        SERVER_URL = 'gamezssl.jfrog.io'
     }
     tools {
         gradle 'gradle-jenkins'
