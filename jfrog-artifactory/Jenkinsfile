@@ -1,7 +1,7 @@
 pipeline {
-    agent { label 'dind-3' } // Especifica el agente donde deseas ejecutar el pipeline
+    agent { label 'dind-3' }
     environment {
-        SERVER_URL = 'gamezssl.jfrog.io' // URL de tu servidor Artifactory
+        SERVER_URL = 'gamezssl.jfrog.io'
     }
     tools {
         gradle 'gradle-jenkins' // Nombre de la herramienta Gradle configurada en Jenkins
@@ -9,11 +9,14 @@ pipeline {
     stages {
         stage('Verificación de Gradle') {
             steps {
-                // Verifica que Gradle está correctamente instalado y accesible en el agente
-                sh 'gradle --version'
+                script {
+                    // Verifica que Gradle está correctamente instalado y accesible en el agente
+                    def gradlePath = tool name: 'gradle-jenkins', type: 'Gradle'
+                    sh "${gradlePath}/bin/gradle --version"
+                }
             }
         }
-        
+
         stage('Clonación del Repositorio') {
             steps {
                 git branch: 'main', url: 'https://github.com/gamezssl/gs-gradle.git'
@@ -25,7 +28,8 @@ pipeline {
                 script {
                     def server = Artifactory.server(SERVER_URL)
                     def rtGradle = Artifactory.newGradleBuild()
-                    rtGradle.tool = 'gradle-jenkins' // El nombre de la herramienta debe coincidir con el configurado en Jenkins
+                    def gradlePath = tool name: 'gradle-jenkins', type: 'Gradle'
+                    rtGradle.tool = gradlePath
                     rtGradle.deployer repo: 'default-gradle-dev-local', server: server
                     rtGradle.resolver repo: 'default-gradle-dev', server: server
                 }
@@ -37,7 +41,7 @@ pipeline {
                 script {
                     def buildInfo = Artifactory.newBuildInfo()
                     buildInfo.env.capture = true
-                    buildInfo.env.filter.addInclude("*") // Captura todas las variables de entorno
+                    buildInfo.env.filter.addInclude("*")
                 }
             }
         }
@@ -46,7 +50,7 @@ pipeline {
             steps {
                 script {
                     def rtGradle = Artifactory.newGradleBuild()
-                    rtGradle.usesPlugin = true // El plugin ya está definido en el script de Gradle
+                    rtGradle.usesPlugin = true
                 }
             }
         }
@@ -54,9 +58,10 @@ pipeline {
         stage('Ejecución de Gradle') {
             steps {
                 script {
+                    def gradlePath = tool name: 'gradle-jenkins', type: 'Gradle'
                     def buildInfo = Artifactory.newBuildInfo()
                     def rtGradle = Artifactory.newGradleBuild()
-                    rtGradle.run rootDir: "artifactory/", tasks: 'clean artifactoryPublish', buildInfo: buildInfo
+                    rtGradle.run rootDir: "artifactory/", tasks: 'clean artifactoryPublish', buildInfo: buildInfo, gradleHome: gradlePath
                 }
             }
         }
