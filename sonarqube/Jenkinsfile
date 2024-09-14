@@ -1,21 +1,34 @@
-node {
-    def myGradleContainer = docker.image('gradle:jdk8-alpine')
-    myGradleContainer.pull()
+pipeline {
+    agent { label 'dind-3' } // Reemplaza con el label del agente que deseas usar
 
-    stage('Preparación') {
-        git branch: 'main', url: 'https://github.com/gamezssl/gs-gradle.git'
-    }
+    stages {
+        stage('Preparación') {
+            steps {
+                git branch: 'main', url: 'https://github.com/gamezssl/gs-gradle.git'
+            }
+        }
 
-    stage('Construcción') {
-      myGradleContainer.inside("-v /home/udemy/ci-cd/jenkins-ct/jenkins_home/.gradle:/home/gradle/.gradle") {
-        sh 'cd complete && /opt/gradle/bin/gradle build'
-      }
-    }
+        stage('Construcción') {
+            steps {
+                script {
+                    def myGradleContainer = docker.image('gradle:jdk8-alpine')
+                    myGradleContainer.pull()
+                    myGradleContainer.inside("-v /home/udemy/ci-cd/jenkins-ct/jenkins_home/.gradle:/home/gradle/.gradle") {
+                        sh 'cd complete && /opt/gradle/bin/gradle build'
+                    }
+                }
+            }
+        }
 
-    stage('Sonar Scanner') {
-      def sonarqubeScannerHome = tool name: 'sonarqube-jenkins', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
-      withCredentials([string(credentialsId: 'sonarqube-credentials', variable: 'sonarLogin')]) {
-        sh "${sonarqubeScannerHome}/bin/sonar-scanner -e -Dsonar.host.url=http://sonarqube:9000 -Dsonar.login=${sonarLogin} -Dsonar.projectName=gs-gradle -Dsonar.projectVersion=${env.BUILD_NUMBER} -Dsonar.projectKey=GS -Dsonar.sources=complete/src/main/ -Dsonar.tests=complete/src/test/ -Dsonar.language=java -Dsonar.java.binaries=."
-      }
+        stage('Sonar Scanner') {
+            steps {
+                script {
+                    def sonarqubeScannerHome = tool name: 'sonarqube-jenkins', type: 'hudson.plugins.sonar.SonarRunnerInstallation'
+                    withCredentials([string(credentialsId: 'sonarqube-credentials', variable: 'sonarLogin')]) {
+                        sh "${sonarqubeScannerHome}/bin/sonar-scanner -e -Dsonar.host.url=http://sonarqube:9000 -Dsonar.login=${sonarLogin} -Dsonar.projectName=gs-gradle -Dsonar.projectVersion=${env.BUILD_NUMBER} -Dsonar.projectKey=GS -Dsonar.sources=complete/src/main/ -Dsonar.tests=complete/src/test/ -Dsonar.language=java -Dsonar.java.binaries=."
+                    }
+                }
+            }
+        }
     }
 }
