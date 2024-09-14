@@ -10,8 +10,8 @@ pipeline {
         stage('Verificación de Gradle') {
             steps {
                 script {
-                    // Verifica que Gradle está correctamente instalado y accesible en el agente
                     def gradlePath = tool name: 'gradle-jenkins', type: 'Gradle'
+                    echo "Gradle path: ${gradlePath}"
                     sh "${gradlePath}/bin/gradle --version"
                 }
             }
