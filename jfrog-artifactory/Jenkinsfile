@@ -1,79 +1,28 @@
-pipeline {
-    agent { label 'dind-3' }
-    environment {
-        SERVER_URL = 'gamezssl.jfrog.io'
-    }
-    tools {
-        gradle 'gradle-jenkins' // Nombre de la herramienta Gradle configurada en Jenkins
-    }
-    stages {
-        stage('Verificación de Gradle') {
-            steps {
-                script {
-                    def gradlePath = tool name: 'gradle-jenkins', type: 'Gradle'
-                    echo "Gradle path: ${gradlePath}"
-                    sh "${gradlePath}/bin/gradle --version"
-                }
-            }
+node {
+    def server = Artifactory.server('gamezssl.jfrog.io')
+    def rtGradle = Artifactory.newGradleBuild()
+    def buildInfo = Artifactory.newBuildInfo()
+    
+    stage 'Complicacion/Build'
+        git branch: 'main', url: 'https://github.com/gamezssl/gs-gradle.git'
+
+    stage 'Configuracion Artifactory'
+        rtGradle.tool = 'gradle-jenkins' // Como le asignamos al nombre de la herramienta en Jenkins en configuración
+        rtGradle.deployer repo:'default-gradle-dev-local',  server: server
+        rtGradle.resolver repo:'default-gradle-dev', server: server
+
+        stage('Configuracion buildInfo') {
+            buildInfo.env.capture = true
+            buildInfo.env.filter.addInclude("*")
         }
 
-        stage('Clonación del Repositorio') {
-            steps {
-                git branch: 'main', url: 'https://github.com/gamezssl/gs-gradle.git'
-            }
+        stage('Configuraciones extra de gradle') {
+            rtGradle.usesPlugin = true // El plugin ya está definifo en el build script
         }
-
-        stage('Configuración Artifactory') {
-            steps {
-                script {
-                    def server = Artifactory.server(SERVER_URL)
-                    def rtGradle = Artifactory.newGradleBuild()
-                    def gradlePath = tool name: 'gradle-jenkins', type: 'Gradle'
-                    rtGradle.tool = gradlePath
-                    rtGradle.deployer repo: 'default-gradle-dev-local', server: server
-                    rtGradle.resolver repo: 'default-gradle-dev', server: server
-                }
-            }
+        stage('Ejecutar Gradle') {
+            rtGradle.run rootDir: "artifactory/", tasks: 'clean artifactoryPublish', buildInfo: buildInfo
         }
-
-        stage('Captura de Variables de Entorno') {
-            steps {
-                script {
-                    def buildInfo = Artifactory.newBuildInfo()
-                    buildInfo.env.capture = true
-                    buildInfo.env.filter.addInclude("*")
-                }
-            }
+        stage('Publicar buildInfo') {
+            server.publishBuildInfo buildInfo
         }
-
-        stage('Configuración de Gradle') {
-            steps {
-                script {
-                    def rtGradle = Artifactory.newGradleBuild()
-                    rtGradle.usesPlugin = true
-                }
-            }
-        }
-
-        stage('Ejecución de Gradle') {
-            steps {
-                script {
-                    def gradlePath = tool name: 'gradle-jenkins', type: 'Gradle'
-                    def buildInfo = Artifactory.newBuildInfo()
-                    def rtGradle = Artifactory.newGradleBuild()
-                    rtGradle.run rootDir: "artifactory/", tasks: 'clean artifactoryPublish', buildInfo: buildInfo, gradleHome: gradlePath
-                }
-            }
-        }
-
-        stage('Publicación del BuildInfo') {
-            steps {
-                script {
-                    def server = Artifactory.server(SERVER_URL)
-                    def buildInfo = Artifactory.newBuildInfo()
-                    server.publishBuildInfo(buildInfo)
-                }
-            }
-        }
-    }
 }
